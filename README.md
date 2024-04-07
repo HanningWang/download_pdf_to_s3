@@ -40,23 +40,22 @@
 假设线程数为100，每个线程每一百篇文章上传一次s3，每篇文章需留有5MB storage，则共需5*100*100 = 50000MB，即约为50GB的storage。
 
 ## 经济成本
-1. ec2
-2. s3:
+### ec2
+### s3:
 
 # 问题与解决方案：
 
-## IP限流
+1. IP限流
 
-## Http Status Code 403
+2. Http Status Code 403
 
-## Read Timeout
+3. Read Timeout
 
-## Http Status Code 400/404/406/410
+4. Http Status Code 400/404/406/410
 
-## 上传s3失败
+5. 上传s3失败
 
-## ec2空间溢出
-
+6. ec2空间溢出
 
 # 工作量估算
 阐明需求与调研 （1 天）
