@@ -41,7 +41,32 @@
 
 ## 经济成本
 ### ec2
+以r5.2xlarge为参考,r5.2xlarge提供8 CPU，64GB Memory和最高可至10Gbps的带宽。可以满足任务需求。
+所需花费为0.504USD每小时，即每天约12USD，一个月共需360USD,约2600CNY。若可在15天内完成任务，则成本降低至1300CNY.
+其他可供参考的型号有：r5.4xlarge,c5.4xlarge,m5.4xlarge
+
 ### s3:
+以下计算来自aws pricing calculator
+假设选择S3 Standard - Infrequent Access
+
+Unit conversions
+S3 Standard-IA storage: 10 TB per month x 1024 GB in a TB = 10240 GB per month
+S3 Standard-IA Average Object Size: 150 MB x 0.0009765625 GB in a MB = 0.146484375 GB
+
+Pricing calculations
+10,240 GB per month / 0.146484375 GB average item size = 69,905.0667 unrounded number of objects
+Round up by 1 (69905.0667) = 69906 number of objects
+10,240 S3 Standard-IA Storage x 0.0125 USD = 128.00 USD (S3 Standard-IA storage cost)
+70,000 PUT requests for S3 Standard-IA Storage x 0.00001 USD per request = 0.70 USD (S3 Standard-IA PUT requests cost)
+128.00 USD + 0.70 USD = 128.70 USD (Total S3 Standard-IA Storage and other costs)
+S3 Standard - Infrequent Access (S3 Standard-IA) cost (monthly): 128.70 USD
+
+0.146484375 S3 Standard-IA Average Object Size / 8 object size / 0.0009765625 GB = 18.75 parts (unrounded)
+Round up by 1 (18.750000) = 19 parts
+69,906 number of objects x 19 parts x 0.00001 USD = 13.28214 USD (Cost for PUT, COPY, POST requests for initial data)
+S3 Standard - Infrequent Access (S3 Standard-IA) cost (upfront): 13.28 USD
+
+(可以看出put request的数量几乎不会影响，因此更好的文件压缩率比少的PUT request更能节省成本)
 
 # 问题与解决方案：
 
