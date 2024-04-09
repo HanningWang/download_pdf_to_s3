@@ -14,6 +14,7 @@ FAILED_DIR = 'failure/'
 SUCCESS_DIR = 'success/'
 
 S3_BUCKET_NAME = 'hanningw-pwd-download-bucket'
+S3_DIR_NAME = 'content'
 
 success = 0
 failure = 0
@@ -22,7 +23,6 @@ failure = 0
 # We choose to compress the whole directory instead of single file, because it saves more space
 def compress_files_and_write_to_s3(directory):
     id = str(uuid.uuid4()) + '.tar.gz'
-    print(f'compress dir {directory} to id {id}')
     
     # Create a gzip tarfile
     with tarfile.open(id, 'w:gz') as tar:
@@ -31,24 +31,25 @@ def compress_files_and_write_to_s3(directory):
     # Create an S3 client
     s3 = boto3.client('s3')
 
-    print('s3 set up')
     # Upload the file to S3
     try:
-        s3.upload_file(id, S3_BUCKET_NAME, id)
-        print(f"File uploaded successfully to s3://{S3_BUCKET_NAME}/{id}")
+        s3.upload_file(id, S3_BUCKET_NAME, f'{S3_DIR_NAME}/{id}')
+        print(f"File uploaded successfully to s3://{S3_BUCKET_NAME}/content/{id}")
 
         # Delete compressed and uncompressed dir
         for item in os.listdir(directory):
             item_path = os.path.join(directory, item)
             os.unlink(item_path)
         os.remove(id)
-        print(f"The content in {directory} has been successfully deleted.")
         
     except Exception as e:
         # Delete the uncompressed dir, leave the compressed file in local for further operations.
         for item in os.listdir(directory):
             os.remove(item)
-        print(f"Error uploading file to S3: {e}")
+        print(f"Error uploading file to S3: {e}, {id}")
+        with open('s3_failure', 'a') as f:
+            f.write(f"Error uploading file to S3: {e}, {id}\n")
+
     
 
 def download_file_as_pdf(file_path, process_count):
@@ -63,7 +64,9 @@ def download_file_as_pdf(file_path, process_count):
 
     # The user agent url can resolve certain 403 and read timeout issues.
     headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3'
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3',
+        'Accept-Language': 'en-US,en;q=0.5',
+        'Accept': '*/*'
     }
     
     with open(file_path, 'r') as file:
@@ -86,8 +89,6 @@ def download_file_as_pdf(file_path, process_count):
                     success = success + 1
                     process_success_count += 1
 
-                    print(f'process success count {process_success_count}')
-
                     # Append success url to file
                     with open(success_url_path, 'a') as f:
                         f.write(url + '\n')
@@ -97,7 +98,7 @@ def download_file_as_pdf(file_path, process_count):
                         elapsed_time = time.time() - start_time
                         print(f"Success count: {success}, failure count: {failure}, time: {elapsed_time} second")
 
-                    if process_success_count % 2 == 0:
+                    if process_success_count % 50 == 0:
                         compress_files_and_write_to_s3(content_path)
                 else:
                     with open(failed_url_path, 'a') as f:
