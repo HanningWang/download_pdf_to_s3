@@ -1,3 +1,17 @@
+# 如何执行代码：
+1. 打开AWS console，在EC2中找到key pair， 下载并修改permission ‘chmod 400 /path/to/your-key-pair.pem’
+
+2. 在Terminal中连接EC2 ‘ssh -i /path/to/your-key-pair.pem ec2-user@your-instance-public-dns’
+
+3. 将所要执行的python代码通过scp上传到EC2 ‘scp -i [user@]SRC_HOST:]file1 [user@]DEST_HOST:]file2’
+
+4. 确认EC2含有 IAM Role ‘write-to-s3’
+
+5. 将input文件分成小份
+
+6. 在想要保存结果的dir中执行python代码 ‘python3 script_to_run.py’
+
+
 # 目标：
 
 下载客户所提供的网址中的学术文章，并上传至云。
