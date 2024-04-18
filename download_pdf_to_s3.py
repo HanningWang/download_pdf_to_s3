@@ -34,7 +34,6 @@ def compress_files_and_write_to_s3(directory):
     # Upload the file to S3
     try:
         s3.upload_file(id, S3_BUCKET_NAME, f'{S3_DIR_NAME}/{id}')
-        print(f"File uploaded successfully to s3://{S3_BUCKET_NAME}/content/{id}")
 
         # Delete compressed and uncompressed dir
         for item in os.listdir(directory):
@@ -62,7 +61,7 @@ def download_file_as_pdf(file_path, process_count):
 
     process_success_count = 0
 
-    # The user agent url can resolve certain 403 and read timeout issues.
+    # The headers can resolve certain 403 and read timeout issues.
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3',
         'Accept-Language': 'en-US,en;q=0.5',
@@ -80,13 +79,13 @@ def download_file_as_pdf(file_path, process_count):
                 # Send a GET request to the URL
                 response = requests.get(url, timeout=(5, 10), headers=headers)
 
-                # Check if the request was successful (status code 200)
-                if response.status_code == 200:
+                # Check if the request was successful (status code 200) and the response format is pdf.
+                if response.status_code == 200 and response.content.startswith(b'%PDF-'):
                     # Open a local file in binary write mode
                     output_path = f"{content_path}/{eid}.pdf"
                     with open(output_path, 'wb') as f:
                         f.write(response.content)
-                    success = success + 1
+                    success += 1
                     process_success_count += 1
 
                     # Append success url to file
@@ -100,15 +99,20 @@ def download_file_as_pdf(file_path, process_count):
 
                     if process_success_count % 50 == 0:
                         compress_files_and_write_to_s3(content_path)
+                # Status code is 200 but not pdf format
+                elif response.status_code == 200:
+                    with open(failed_url_path, 'a') as f:
+                        f.write(f"Response content type is {response.headers.get('Content-Type')}, url: {url} \n")
+                    failure += 1
                 else:
                     with open(failed_url_path, 'a') as f:
                         f.write(f'Failed to download PDF file. Status code: {response.status_code}, url: {url} \n')
-                    failure = failure + 1
+                    failure += 1
                     
             except Exception as e:
                 with open(failed_url_path, 'a') as f:
                     f.write(f"An error occurred: {e}, url: {url} \n")
-                failure = failure + 1
+                failure += 1
 
 if __name__ == "__main__":
     start_time = time.time()
